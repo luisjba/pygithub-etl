@@ -47,7 +47,7 @@ class GitDump():
         if not os.path.isdir(schemas_dir):
             print_fail("'{}' is an invalid directory. Provide a valid directory to find the schemas for SQLite tables".format(schemas_dir))
             sys.exit(1)
-        schemas:list = ['repo']
+        schemas:list = ['repo', 'branch']
         schame_dict = {schema:"{}/{}.sql".format(schemas_dir, schema) for schema in schemas}
         if self.db_conn is not None and len(schame_dict) > 0:
             for t,t_file  in schame_dict.items():
@@ -78,7 +78,7 @@ class GitDump():
             "language": self.repo.language,
             "topics": ",".join(self.repo.get_topics()),
         }
-        db_repo = self.db_conn.get_repo(repo_data["fullname"])
+        db_repo = self.db_conn.get_repo(self.repo.full_name)
         if db_repo is None:
             db_repo = self.db_conn.add_repo(repo_data)
             if db_repo is None:
@@ -90,13 +90,44 @@ class GitDump():
             if db_repo["pushed_date"] < repo_data["pushed_date"]:
                 print_okblue("Trying to update repo '{}' from {} to {} ".format(
                     self.repo.full_name,
-                    datetime.fromtimestamp(repo_data["pushed_date"]).strftime(self._date_format),
-                    datetime.fromtimestamp(db_repo["pushed_date"]).strftime(self._date_format)
+                    datetime.fromtimestamp(db_repo["pushed_date"]).strftime(self._date_format),
+                    datetime.fromtimestamp(repo_data["pushed_date"]).strftime(self._date_format)
                 ))
                 db_repo = self.db_conn.update_repo(repo_data)
                 print_okgreen("Respository '{}' succesfully sincronized into SQLite db.".format(self.repo.full_name))
             else:
                 print_okblue("Respository '{}' is up to date.".format(self.repo.full_name))
+
+    def sync_branches(self):
+        """Syncornize the Branches of the repository"""
+        db_repo = self.db_conn.get_repo(self.repo.full_name)
+        if db_repo is None:
+            print_fail("The repository '{}' dos not exists in the SQLite db. Try first 'sync_repo' function".format(self.repo.full_name))
+            sys.exit(1)
+        for branch in self.repo.get_branches():
+            branch_data = {
+                "repo_id": db_repo["id"],
+                "name": branch.name,
+                "commit_sha": branch.commit.sha,
+                "protected": 1 if branch.protected else 0,
+            }
+            db_branch = self.db_conn.get_branch(db_repo["id"], branch.name)
+            if db_branch is None:
+                db_branch = self.db_conn.add_branch(db_repo["id"], branch_data)
+                if db_branch is None:
+                    print_fail("Failed insert the branch '{}:{}' into SQLite db".format(self.repo.full_name, branch.name))
+                else:
+                    print_okgreen("Branch '{}:{}' succesfully inserted into SQLite db".format(self.repo.full_name, branch.name))
+            else:
+                if not (db_branch["commit_sha"] == branch_data["commit_sha"] ) :
+                    print_okblue("Trying to update branch '{}:{}' from commit  {} to {} ".format(
+                            self.repo.full_name, branch.name, db_branch["commit_sha"], branch_data["commit_sha"]
+                        ))
+                    db_branch = self.db_conn.update_branch(branch_data)
+                    print_okgreen("Branch '{}:{}' succesfully sincronized into SQLite db.".format(self.repo.full_name, branch.name))
+                else:
+                    print_okblue("Branch '{}:{}' is up to date.".format(self.repo.full_name, branch.name))
+
 
     
 

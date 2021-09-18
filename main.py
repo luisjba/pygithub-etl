@@ -38,6 +38,7 @@ def execute(args):
         extra_args['schemas_dir'] = args.get('--sdir')
     gd = gdump.GitDump(token, repo_fullname, **extra_args)
     gd.sync_repo()
+    gd.sync_branches()
 
 if __name__ == '__main__':
     args = docopt(__doc__, version=gdump.__version__)
