@@ -14,14 +14,16 @@ __email__ = 'me@luisjba.com'
 __status__ = 'Development'
 
 import os, sys
+from datetime import datetime
 from posixpath import join
 from github import Github, GithubException
 from github.Repository import Repository
 from .db import Connection
-from .utils import print_fail, print_okgreen
+from .utils import print_fail, print_okgreen, print_okblue
 
 class GitDump():
     def __init__(self, token: str, repo_fullname: str, db_file: str = "data/data.db", base_path: str = "", schemas_dir="schemas") -> None:
+        self._date_format:str = "%Y/%m/%d %H:%M:%S"
         self.g: Github = Github(token)
         try:
             self.repo:Repository = self.g.get_repo(repo_fullname)
@@ -58,6 +60,43 @@ class GitDump():
                 with open(t_file, 'r') as file:
                     if self.db_conn.create_table(file.read()):
                         print_okgreen("Created the table {} into SQLite db: '{}'".format(t, self.db_conn.db_file))
+
+    def sync_repo(self):
+        """This function perform the repo syncronization into the SQLite db"""
+        repo_data = {
+            "name": self.repo.name,
+            "owner": self.repo.owner.login,
+            "fullname": self.repo.full_name,
+            "description": self.repo.description,
+            "url": self.repo.url,
+            "pushed_date": int(self.repo.pushed_at.timestamp()),
+            "created_date": int(self.repo.created_at.timestamp()),
+            "size": self.repo.size,
+            "stars": self.repo.stargazers_count,
+            "forks": self.repo.forks_count,
+            "watchers": self.repo.watchers_count,
+            "language": self.repo.language,
+            "topics": ",".join(self.repo.get_topics()),
+        }
+        db_repo = self.db_conn.get_repo(repo_data["fullname"])
+        if db_repo is None:
+            db_repo = self.db_conn.add_repo(repo_data)
+            if db_repo is None:
+                print_fail("Failed insert the new repository '{}' into SQLite db".format(self.repo.full_name))
+                sys.exit(1)
+            else:
+                print_okgreen("Respository '{}'  succesfully inserted into SQLite db".format(self.repo.full_name))
+        else:
+            if db_repo["pushed_date"] < repo_data["pushed_date"]:
+                print_okblue("Trying to update repo '{}' from {} to {} ".format(
+                    self.repo.full_name,
+                    datetime.fromtimestamp(repo_data["pushed_date"]).strftime(self._date_format),
+                    datetime.fromtimestamp(db_repo["pushed_date"]).strftime(self._date_format)
+                ))
+                db_repo = self.db_conn.update_repo(repo_data)
+                print_okgreen("Respository '{}' succesfully sincronized into SQLite db.".format(self.repo.full_name))
+            else:
+                print_okblue("Respository '{}' is up to date.".format(self.repo.full_name))
 
     
 

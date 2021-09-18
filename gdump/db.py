@@ -17,7 +17,7 @@ from genericpath import isdir
 import sqlite3
 from sqlite3 import Error, Row
 import os, sys
-from .utils import print_fail, print_okgreen
+from .utils import print_fail, print_okgreen, print_warning
 
 class Connection():
     def __init__(self, base_path:str, db_file:str):
@@ -64,6 +64,8 @@ class Connection():
             )
         values = [values_dict[k] for k in columns]
         try:
+            print_warning(query)
+            print_warning(values)
             cursor:sqlite3.Cursor = self.db_conn.cursor().execute(query, values)
             self.db_conn.commit()
             return cursor.lastrowid
@@ -167,3 +169,25 @@ class Connection():
         :return: true if no error occurs
         """
         return self.execute_query_nr(create_table_statement)
+
+    def get_repo(self, fullname:str, pk_column:str="fullname"):
+        """Get the repository by fullname"""
+        repos = self.execute_query_fetch("repo", condition_dict={pk_column:fullname})
+        return repos[0] if len(repos) > 0 else None
+
+    def add_repo(self, repo_data:dict) -> Row:
+        """Store  new repo into the DB"""
+        self.execute_query_insert("repo",repo_data, columns_timestamp=[])
+        return self.get_repo(repo_data["fullname"])
+    
+    def get_or_create_repo(self, repo_data:dict) -> Row:
+        """Try to find the repo or create if not exists"""
+        repo = self.get_repo(repo_data["fullname"])
+        if repo is None:
+            return self.add_repo(repo_data)
+        return repo
+
+    def update_repo(self, repo_data:Row) -> Row:
+        """Update the repo information and retrive the updated value from the DB"""
+        self.execute_query_update("repo", repo_data, keys=["id"], columns_timestamp=[])
+        return self.get_repo(repo_data["id"], pk_column="id")
