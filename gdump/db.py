@@ -64,8 +64,8 @@ class Connection():
             )
         values = [values_dict[k] for k in columns]
         try:
-            print_warning(query)
-            print_warning(values)
+            # print_warning(query)
+            # print_warning(values)
             cursor:sqlite3.Cursor = self.db_conn.cursor().execute(query, values)
             self.db_conn.commit()
             return cursor.lastrowid
