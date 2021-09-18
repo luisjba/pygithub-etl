@@ -1,0 +1,4 @@
+PyGithub
+docopt
+pandas
+
