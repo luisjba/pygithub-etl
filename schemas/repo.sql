@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS repo(
     url VARCHAR(511) NOT NULL,
     pushed_date INTEGER NOT NULL,
     created_date INTEGER NOT NULL,
+    updated_date INTEGER NOT NULL,
     size INTEGER NOT NULL,
     stars INTEGER NOT NULL,
     forks INTEGER NOT NULL,
