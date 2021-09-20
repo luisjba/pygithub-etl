@@ -176,7 +176,7 @@ class Connection():
         return repos[0] if len(repos) > 0 else None
 
     def add_repo(self, repo_data:dict) -> Row:
-        """Store  new repo into the DB"""
+        """Store new repo into the DB"""
         self.execute_query_insert("repo",repo_data, columns_timestamp=[])
         return self.get_repo(repo_data["fullname"])
     
@@ -194,11 +194,11 @@ class Connection():
 
     def get_branch(self, repo_id:int, name:str, pk_column:str="name"):
         """Get the repository branch by name"""
-        repos = self.execute_query_fetch("branch", condition_dict={"repo_id":repo_id, pk_column:name})
-        return repos[0] if len(repos) > 0 else None
+        branches = self.execute_query_fetch("branch", condition_dict={"repo_id":repo_id, pk_column:name})
+        return branches[0] if len(branches) > 0 else None
 
     def add_branch(self, repo_id:int, branch_data:dict) -> Row:
-        """Store  new branch into the DB"""
+        """Store new branch into the DB"""
         self.execute_query_insert("branch",branch_data, columns_timestamp=[])
         return self.get_branch(repo_id, branch_data["name"])
 
@@ -206,3 +206,18 @@ class Connection():
         """Update the branch information and retrive the updated value from the DB"""
         self.execute_query_update("branch", branch_data, keys=["id"], columns_timestamp=[])
         return self.get_branch(branch_data["repo_id"], branch_data["id"], pk_column="id")
+    
+    def get_commit(self, repo_id:int, commit_sha:str, pk_column:str="commit_sha"):
+        """Get the repository commit by sha"""
+        commits = self.execute_query_fetch("commits", condition_dict={"repo_id":repo_id, pk_column:commit_sha})
+        return commits[0] if len(commits) > 0 else None
+
+    def add_commit(self, repo_id:int, commit_data:dict) -> Row:
+        """Store new commit into the DB"""
+        self.execute_query_insert("commits",commit_data, columns_timestamp=[])
+        return self.get_commit(repo_id, commit_data["commit_sha"])
+
+    def update_commit(self, commit_data:Row) -> Row:
+        """Update the commit information and retrive the updated value from the DB"""
+        self.execute_query_update("commits", commit_data, keys=["id"], columns_timestamp=[])
+        return self.get_branch(commit_data["repo_id"], commit_data["id"], pk_column="id")

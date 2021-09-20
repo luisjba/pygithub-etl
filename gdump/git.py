@@ -16,10 +16,10 @@ __status__ = 'Development'
 import os, sys
 from datetime import datetime
 from posixpath import join
-from github import Github, GithubException
+from github import Github, GithubException, Commit
 from github.Repository import Repository
 from .db import Connection
-from .utils import print_fail, print_okgreen, print_okblue
+from .utils import print_fail, print_okgreen, print_okblue, print_warning
 
 class GitDump():
     def __init__(self, token: str, repo_fullname: str, db_file: str = "data/data.db", base_path: str = "", schemas_dir="schemas") -> None:
@@ -47,12 +47,13 @@ class GitDump():
         if not os.path.isdir(schemas_dir):
             print_fail("'{}' is an invalid directory. Provide a valid directory to find the schemas for SQLite tables".format(schemas_dir))
             sys.exit(1)
-        schemas:list = ['repo', 'branch']
+        schemas:list = ['repo', 'branch', 'commits']
         schame_dict = {schema:"{}/{}.sql".format(schemas_dir, schema) for schema in schemas}
         if self.db_conn is not None and len(schame_dict) > 0:
             for t,t_file  in schame_dict.items():
                 if not os.path.isfile(t_file):
                     print_fail("Schema file '{}' does not exists".format(t_file))
+                    sys.exit(1)
                     continue
                 result = self.db_conn.execute_query_fetch('sqlite_master',['name'],{'type':'table', 'name':t})
                 if len(result) > 0 : # The table already axists in the database
@@ -71,6 +72,7 @@ class GitDump():
             "url": self.repo.url,
             "pushed_date": int(self.repo.pushed_at.timestamp()),
             "created_date": int(self.repo.created_at.timestamp()),
+            "updated_date": int(self.repo.updated_at.timestamp()),
             "size": self.repo.size,
             "stars": self.repo.stargazers_count,
             "forks": self.repo.forks_count,
@@ -128,6 +130,66 @@ class GitDump():
                 else:
                     print_okblue("Branch '{}:{}' is up to date.".format(self.repo.full_name, branch.name))
 
+    def _get_commit_data(self,repo_id:int, commit:Commit.Commit ) -> dict:
+        """Extract the data form a Commit Object"""
+        try:
+            return {
+                "repo_id": repo_id,
+                "commit_sha": commit.sha,
+                "commit_message": commit.commit.message,
+                "commit_message": commit.commit.message,
+                "commit_author_name": commit.commit.author.name,
+                "commit_author_email": commit.commit.author.email,
+                "commit_author_date": int(commit.commit.author.date.timestamp()),
+                "commit_committer_name": commit.commit.committer.name,
+                "commit_committer_email": commit.commit.committer.email,
+                "commit_committer_date": int(commit.commit.committer.date.timestamp()),
+                "author_login": commit.author.login,
+                "author_id": commit.author.id,
+                "author_avatar_url": commit.author.avatar_url,
+                "author_type": commit.author.type,
+                "committer_login": commit.committer.login,
+                "committer_id": commit.committer.id,
+                "committer_avatar_url": commit.committer.avatar_url,
+                "committer_type": commit.committer.type,
+                "stats_addtions": commit.stats.additions,
+                "stats_deletions": commit.stats.deletions,
+                "stats_total": commit.stats.total
+            }
+        except GithubException as e:
+             print_fail("GitHub error: {}".format(e))
+        except AttributeError as e:
+            print_fail("Attribute error: {}".format(e))
+        print_warning("Commit data:".format(commit.raw_data))
+        return None
+
+    def sync_commits(self, force_update=False):
+        """Syncornize the Commits of a repository"""
+        db_repo = self.db_conn.get_repo(self.repo.full_name)
+        if db_repo is None:
+            print_fail("The repository '{}' dos not exists in the SQLite db. Try first 'sync_repo' function".format(self.repo.full_name))
+            sys.exit(1)
+        for commit in self.repo.get_commits():
+            commit_data = self._get_commit_data(db_repo["id"], commit)
+            if commit_data is None:
+                print_fail("Something went worng tryin ti fetch/parse '{}:{}'".format(self.repo.full_name, commit.sha))
+                sys.exit(1)
+            db_commit = self.db_conn.get_commit(db_repo["id"], commit.sha)
+            if db_commit is None:
+                db_commit = self.db_conn.add_commit(db_repo["id"], commit_data)
+                if db_commit is None:
+                    print_fail("Failed insert the commit '{}:{}' into SQLite db".format(self.repo.full_name, commit.sha))
+                else:
+                    print_okgreen("Commit '{}:{}' succesfully inserted into SQLite db".format(self.repo.full_name, commit.sha))
+            if db_commit is not None:
+                if force_update:
+                    print_okblue("Trying to update commit '{}:{}'".format(
+                            self.repo.full_name, commit.sha, db_commit["commit_sha"], commit_data["commit_sha"]
+                        ))
+                    db_commit = self.db_conn.update_commit(commit_data)
+                    print_okgreen("Commit '{}:{}' succesfully sincronized into SQLite db.".format(self.repo.full_name, commit.sha))
+
+                # TODO: Update commit files
 
     
 

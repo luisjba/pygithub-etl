@@ -13,6 +13,7 @@ Arguments:
 Options:
     -h, help         Show help
     -v, version      Version
+    -f, force_update Force the update of commit and files
     --db=<database>  The SQLlite database file, by default is 'data/data.db'
     --sdir=<schemadirectory> The schema directory to find the corresponding DDL for table creation,\
                     by default is 'schemas'.
@@ -26,7 +27,7 @@ def help():
 def version():
     print('Version %s' % gdump.__version__)
 
-def execute(args):
+def execute(args:dict):
     import os
     base_path=str(os.path.dirname(os.path.abspath(__file__)) ).replace(os.getcwd()+"/","")
     token = args.get('TOKEN')
@@ -39,6 +40,7 @@ def execute(args):
     gd = gdump.GitDump(token, repo_fullname, **extra_args)
     gd.sync_repo()
     gd.sync_branches()
+    gd.sync_commits(args.get('--force_update', False))
 
 if __name__ == '__main__':
     args = docopt(__doc__, version=gdump.__version__)
