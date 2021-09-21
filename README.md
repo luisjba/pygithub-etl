@@ -398,10 +398,7 @@ API JSON response for commit
    ]
 }
 ```
-<details> 
-<summary>
-API JSON response for commit
-</summary>
+</details> 
 
 ### Commit File Schema
 
@@ -440,5 +437,5 @@ API JSON response for files section in the commit
 }
 ```
 
-</summary>
+</details> 
 
