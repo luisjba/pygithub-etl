@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Proscan UI
+"""GithubETL Library
 
 Usage:
   main.py help
@@ -17,7 +17,7 @@ Options:
     -f, force_update Force the update of commit and files
     --db=<database>  The SQLlite database file, by default is 'data/data.db'
     --sdir=<schemadirectory> The schema directory to find the corresponding DDL for table creation,\
-                    by default is 'schemas'.
+by default is 'schemas'.
 """
 from docopt import docopt
 import etl
@@ -40,10 +40,10 @@ def sync(args:dict):
         extra_args['db_file'] = args.get('--db')
     if args.get('--sdir'):
         extra_args['schemas_dir'] = args.get('--sdir')
-    gd = etl.GithubETL(token, repo_fullname, **extra_args)
-    gd.sync_repo()
-    gd.sync_branches()
-    gd.sync_commits(args.get('--force_update', False))
+    getl = etl.GithubETL(token, repo_fullname, **extra_args)
+    getl.sync_repo()
+    getl.sync_branches()
+    getl.sync_commits(args.get('--force_update', False))
 
 def analize(args):
     print("TODO: ANALIZE")
