@@ -17,6 +17,7 @@ import os, sys
 from datetime import datetime
 from posixpath import join
 from github import Github, GithubException, Commit
+from github.NamedUser import NamedUser
 from github.Repository import Repository
 from .db import Connection
 from .utils import print_fail, print_okgreen, print_okblue, print_warning
@@ -89,6 +90,7 @@ class GitDump():
             else:
                 print_okgreen("Respository '{}'  succesfully inserted into SQLite db".format(self.repo.full_name))
         else:
+            repo_data["id"] = db_repo["id"]
             if db_repo["pushed_date"] < repo_data["pushed_date"]:
                 print_okblue("Trying to update repo '{}' from {} to {} ".format(
                     self.repo.full_name,
@@ -121,6 +123,7 @@ class GitDump():
                 else:
                     print_okgreen("Branch '{}:{}' succesfully inserted into SQLite db".format(self.repo.full_name, branch.name))
             else:
+                branch_data["id"] = db_branch["id"]
                 if not (db_branch["commit_sha"] == branch_data["commit_sha"] ) :
                     print_okblue("Trying to update branch '{}:{}' from commit  {} to {} ".format(
                             self.repo.full_name, branch.name, db_branch["commit_sha"], branch_data["commit_sha"]
@@ -133,7 +136,7 @@ class GitDump():
     def _get_commit_data(self,repo_id:int, commit:Commit.Commit ) -> dict:
         """Extract the data form a Commit Object"""
         try:
-            return {
+            data =  {
                 "repo_id": repo_id,
                 "commit_sha": commit.sha,
                 "commit_message": commit.commit.message,
@@ -144,24 +147,27 @@ class GitDump():
                 "commit_committer_name": commit.commit.committer.name,
                 "commit_committer_email": commit.commit.committer.email,
                 "commit_committer_date": int(commit.commit.committer.date.timestamp()),
-                "author_login": commit.author.login,
-                "author_id": commit.author.id,
-                "author_avatar_url": commit.author.avatar_url,
-                "author_type": commit.author.type,
-                "committer_login": commit.committer.login,
-                "committer_id": commit.committer.id,
-                "committer_avatar_url": commit.committer.avatar_url,
-                "committer_type": commit.committer.type,
                 "stats_addtions": commit.stats.additions,
                 "stats_deletions": commit.stats.deletions,
                 "stats_total": commit.stats.total
             }
+            self._append_user_data(data, commit.author, "author")
+            self._append_user_data(data, commit.committer, "committer")
+            return data
         except GithubException as e:
              print_fail("GitHub error: {}".format(e))
         except AttributeError as e:
             print_fail("Attribute error: {}".format(e))
         print_warning("Commit data:".format(commit.raw_data))
         return None
+
+    def _append_user_data(self, data:dict, user:NamedUser, prefix_key:str):
+        """Append the user dara to a data dict"""
+        if user is not None:
+            data["{}_id".format(prefix_key)] = user.id
+            data["{}_login".format(prefix_key)] = user.login
+            data["{}_avatar_url".format(prefix_key)] = user.avatar_url
+            data["{}_type".format(prefix_key)] = user.type
 
     def sync_commits(self, force_update=False):
         """Syncornize the Commits of a repository"""
@@ -172,8 +178,8 @@ class GitDump():
         for commit in self.repo.get_commits():
             commit_data = self._get_commit_data(db_repo["id"], commit)
             if commit_data is None:
-                print_fail("Something went worng tryin ti fetch/parse '{}:{}'".format(self.repo.full_name, commit.sha))
-                sys.exit(1)
+                print_fail("Something went worng tryin t0 fetch/parse '{}:{}'".format(self.repo.full_name, commit.sha))
+                continue
             db_commit = self.db_conn.get_commit(db_repo["id"], commit.sha)
             if db_commit is None:
                 db_commit = self.db_conn.add_commit(db_repo["id"], commit_data)
