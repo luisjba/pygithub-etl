@@ -4,7 +4,8 @@
 Usage:
   main.py help
   main.py version
-  main.py TOKEN REPO [--db=<database>] [--sdir=<schemadirectory>]
+  main.py sync TOKEN REPO [--db=<database>] [--sdir=<schemadirectory>]
+  main.py analize [--db=<database>]
 
 Arguments:
   TOKEN        The GitHub Token
@@ -19,35 +20,44 @@ Options:
                     by default is 'schemas'.
 """
 from docopt import docopt
-import gdump
+import etl
+
+def _get_base_path() -> str:
+    import os
+    return str(os.path.dirname(os.path.abspath(__file__)) ).replace(os.getcwd()+"/","")
 
 def help():
     print(__doc__)
 
 def version():
-    print('Version %s' % gdump.__version__)
+    print('Version %s' % etl.__version__)
 
-def execute(args:dict):
-    import os
-    base_path=str(os.path.dirname(os.path.abspath(__file__)) ).replace(os.getcwd()+"/","")
+def sync(args:dict):
     token = args.get('TOKEN')
     repo_fullname = args.get('REPO')
-    extra_args = {"base_path":base_path}
+    extra_args = {"base_path":_get_base_path()}
     if args.get('--db'):
         extra_args['db_file'] = args.get('--db')
     if args.get('--sdir'):
         extra_args['schemas_dir'] = args.get('--sdir')
-    gd = gdump.GitDump(token, repo_fullname, **extra_args)
+    gd = etl.GithubETL(token, repo_fullname, **extra_args)
     gd.sync_repo()
     gd.sync_branches()
     gd.sync_commits(args.get('--force_update', False))
 
+def analize(args):
+    print("TODO: ANALIZE")
+
+
 if __name__ == '__main__':
-    args = docopt(__doc__, version=gdump.__version__)
+    args = docopt(__doc__, version=etl.__version__)
+    print(args)
     if args.get('help'):
         help()
     elif args.get('version'):
         version()
+    elif  args.get('analize'):
+        analize(args)
     else:
-        execute(args)
+        sync(args)
     
