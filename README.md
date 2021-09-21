@@ -1,4 +1,4 @@
-# GitHubETL library
+# GitHubETL Library
 
 GitHubETL is a Python library that use the [PyGithub library](https://github.com/PyGithub/PyGithub/) to consume the [Github API v3](http://developer.github.com/v3)
 to extrac the data from any [Github](http://github.com) repository, transform and load the data into a SqlLite database (we use the [SQLite3 Python library](https://docs.python.org/3/library/sqlite3.html) to manipulate our database).
@@ -94,6 +94,7 @@ $ python main.py sync XXXXXXXXXXXXXX  my_user/my_repo --db ~/Project/my_repo.db
 
 To use as library, wirte your implementation in the current clonned project or copy the `etl` and `schemas` into your desired project. We jave to import the  `GithubETL` class.
 ```python
+import etl
 from etl import GithubETL
 ```
 
@@ -117,6 +118,7 @@ If all is ok (the token is valid and the database connection was successfull), y
 #### All toguether
 
 ```python
+import etl
 from etl import GithubETL
 
 token = "XXXXXXXXX"
@@ -139,5 +141,111 @@ getl.sync_commits(true)
 
 ## Schemas
 
+A ER model (Entity-relationship model) was desingned to store all the related data of a Github repository. We have 4 schemas:
 
+### Repo Schema
+
+The repo schema is used to fit the data that the GitHub API provide as response for a requested repository.
+
+```json
+{'id': 408675469,
+ 'node_id': 'R_kgDOGFvkjQ',
+ 'name': 'pygithub-etl',
+ 'full_name': 'luisjba/pygithub-etl',
+ 'private': False,
+ 'owner': {'login': 'luisjba',
+  'id': 1441722,
+  'node_id': 'MDQ6VXNlcjE0NDE3MjI=',
+  'avatar_url': 'https://avatars.githubusercontent.com/u/1441722?v=4',
+  'gravatar_id': '',
+  'url': 'https://api.github.com/users/luisjba',
+  'html_url': 'https://github.com/luisjba',
+  'followers_url': 'https://api.github.com/users/luisjba/followers',
+  'following_url': 'https://api.github.com/users/luisjba/following{/other_user}',
+  'gists_url': 'https://api.github.com/users/luisjba/gists{/gist_id}',
+  'starred_url': 'https://api.github.com/users/luisjba/starred{/owner}{/repo}',
+  'subscriptions_url': 'https://api.github.com/users/luisjba/subscriptions',
+  'organizations_url': 'https://api.github.com/users/luisjba/orgs',
+  'repos_url': 'https://api.github.com/users/luisjba/repos',
+  'events_url': 'https://api.github.com/users/luisjba/events{/privacy}',
+  'received_events_url': 'https://api.github.com/users/luisjba/received_events',
+  'type': 'User',
+  'site_admin': False},
+ 'html_url': 'https://github.com/luisjba/pygithub-etl',
+ 'description': 'Python library that uses PyGithub library to consume GitHub API authenticated by  token, to Extract Transform and Load the related data into a SQLite database to analyze it.',
+ 'fork': False,
+ 'url': 'https://api.github.com/repos/luisjba/pygithub-etl',
+ 'forks_url': 'https://api.github.com/repos/luisjba/pygithub-etl/forks',
+ 'keys_url': 'https://api.github.com/repos/luisjba/pygithub-etl/keys{/key_id}',
+ 'collaborators_url': 'https://api.github.com/repos/luisjba/pygithub-etl/collaborators{/collaborator}',
+ 'teams_url': 'https://api.github.com/repos/luisjba/pygithub-etl/teams',
+ 'hooks_url': 'https://api.github.com/repos/luisjba/pygithub-etl/hooks',
+ 'issue_events_url': 'https://api.github.com/repos/luisjba/pygithub-etl/issues/events{/number}',
+ 'events_url': 'https://api.github.com/repos/luisjba/pygithub-etl/events',
+ 'assignees_url': 'https://api.github.com/repos/luisjba/pygithub-etl/assignees{/user}',
+ 'branches_url': 'https://api.github.com/repos/luisjba/pygithub-etl/branches{/branch}',
+ 'tags_url': 'https://api.github.com/repos/luisjba/pygithub-etl/tags',
+ 'blobs_url': 'https://api.github.com/repos/luisjba/pygithub-etl/git/blobs{/sha}',
+ 'git_tags_url': 'https://api.github.com/repos/luisjba/pygithub-etl/git/tags{/sha}',
+ 'git_refs_url': 'https://api.github.com/repos/luisjba/pygithub-etl/git/refs{/sha}',
+ 'trees_url': 'https://api.github.com/repos/luisjba/pygithub-etl/git/trees{/sha}',
+ 'statuses_url': 'https://api.github.com/repos/luisjba/pygithub-etl/statuses/{sha}',
+ 'languages_url': 'https://api.github.com/repos/luisjba/pygithub-etl/languages',
+ 'stargazers_url': 'https://api.github.com/repos/luisjba/pygithub-etl/stargazers',
+ 'contributors_url': 'https://api.github.com/repos/luisjba/pygithub-etl/contributors',
+ 'subscribers_url': 'https://api.github.com/repos/luisjba/pygithub-etl/subscribers',
+ 'subscription_url': 'https://api.github.com/repos/luisjba/pygithub-etl/subscription',
+ 'commits_url': 'https://api.github.com/repos/luisjba/pygithub-etl/commits{/sha}',
+ 'git_commits_url': 'https://api.github.com/repos/luisjba/pygithub-etl/git/commits{/sha}',
+ 'comments_url': 'https://api.github.com/repos/luisjba/pygithub-etl/comments{/number}',
+ 'issue_comment_url': 'https://api.github.com/repos/luisjba/pygithub-etl/issues/comments{/number}',
+ 'contents_url': 'https://api.github.com/repos/luisjba/pygithub-etl/contents/{+path}',
+ 'compare_url': 'https://api.github.com/repos/luisjba/pygithub-etl/compare/{base}...{head}',
+ 'merges_url': 'https://api.github.com/repos/luisjba/pygithub-etl/merges',
+ 'archive_url': 'https://api.github.com/repos/luisjba/pygithub-etl/{archive_format}{/ref}',
+ 'downloads_url': 'https://api.github.com/repos/luisjba/pygithub-etl/downloads',
+ 'issues_url': 'https://api.github.com/repos/luisjba/pygithub-etl/issues{/number}',
+ 'pulls_url': 'https://api.github.com/repos/luisjba/pygithub-etl/pulls{/number}',
+ 'milestones_url': 'https://api.github.com/repos/luisjba/pygithub-etl/milestones{/number}',
+ 'notifications_url': 'https://api.github.com/repos/luisjba/pygithub-etl/notifications{?since,all,participating}',
+ 'labels_url': 'https://api.github.com/repos/luisjba/pygithub-etl/labels{/name}',
+ 'releases_url': 'https://api.github.com/repos/luisjba/pygithub-etl/releases{/id}',
+ 'deployments_url': 'https://api.github.com/repos/luisjba/pygithub-etl/deployments',
+ 'created_at': '2021-09-21T03:28:01Z',
+ 'updated_at': '2021-09-21T06:48:00Z',
+ 'pushed_at': '2021-09-21T06:47:57Z',
+ 'git_url': 'git://github.com/luisjba/pygithub-etl.git',
+ 'ssh_url': 'git@github.com:luisjba/pygithub-etl.git',
+ 'clone_url': 'https://github.com/luisjba/pygithub-etl.git',
+ 'svn_url': 'https://github.com/luisjba/pygithub-etl',
+ 'homepage': None,
+ 'size': 18,
+ 'stargazers_count': 0,
+ 'watchers_count': 0,
+ 'language': 'Python',
+ 'has_issues': True,
+ 'has_projects': True,
+ 'has_downloads': True,
+ 'has_wiki': True,
+ 'has_pages': False,
+ 'forks_count': 0,
+ 'mirror_url': None,
+ 'archived': False,
+ 'disabled': False,
+ 'open_issues_count': 0,
+ 'license': None,
+ 'allow_forking': True,
+ 'forks': 0,
+ 'open_issues': 0,
+ 'watchers': 0,
+ 'default_branch': 'master',
+ 'permissions': {'admin': True,
+  'maintain': True,
+  'push': True,
+  'triage': True,
+  'pull': True},
+ 'temp_clone_token': '',
+ 'network_count': 0,
+ 'subscribers_count': 1}
+```
 
