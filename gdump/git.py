@@ -14,6 +14,7 @@ __email__ = 'me@luisjba.com'
 __status__ = 'Development'
 
 import os, sys
+from sqlite3.dbapi2 import Row
 from datetime import datetime
 from posixpath import join
 from github import Github, GithubException, Commit
@@ -48,7 +49,7 @@ class GitDump():
         if not os.path.isdir(schemas_dir):
             print_fail("'{}' is an invalid directory. Provide a valid directory to find the schemas for SQLite tables".format(schemas_dir))
             sys.exit(1)
-        schemas:list = ['repo', 'branch', 'commits']
+        schemas:list = ['repo', 'branch', 'commits', 'commit_file']
         schame_dict = {schema:"{}/{}.sql".format(schemas_dir, schema) for schema in schemas}
         if self.db_conn is not None and len(schame_dict) > 0:
             for t,t_file  in schame_dict.items():
@@ -140,7 +141,6 @@ class GitDump():
                 "repo_id": repo_id,
                 "commit_sha": commit.sha,
                 "commit_message": commit.commit.message,
-                "commit_message": commit.commit.message,
                 "commit_author_name": commit.commit.author.name,
                 "commit_author_email": commit.commit.author.email,
                 "commit_author_date": int(commit.commit.author.date.timestamp()),
@@ -194,8 +194,27 @@ class GitDump():
                         ))
                     db_commit = self.db_conn.update_commit(commit_data)
                     print_okgreen("Commit '{}:{}' succesfully sincronized into SQLite db.".format(self.repo.full_name, commit.sha))
+                self._sync_commit_files(commit, db_commit)
 
-                # TODO: Update commit files
+    def _sync_commit_files(self, commit:Commit.Commit, db_commit:Row):
+        """Syncronize the files related with the commit"""
+        for file in commit.files:
+            commit_file_data = {
+                "commit_id": db_commit["id"],
+                "repo_id": db_commit["repo_id"],
+                "file_name": file.filename,
+                "addtions": file.additions,
+                "deletions": file.deletions,
+                "changes": file.changes,
+                "status": file.status
+            }
+            db_commit_file = self.db_conn.get_commit_file(db_commit["id"], file.filename)
+            if db_commit_file is None:
+                db_commit_file = self.db_conn.add_commit_file(db_commit["id"], commit_file_data)
+                if db_commit_file is None:
+                    print_fail("\tFailed insert the commit_file '{}:{} {}' into SQLite db".format(self.repo.full_name, commit.sha, file.filename))
+                else:
+                    print_okgreen("\tFile '{}:{} {}' succesfully inserted into SQLite db".format(self.repo.full_name, commit.sha, file.filename))
 
     
 

@@ -64,13 +64,13 @@ class Connection():
             )
         values = [values_dict[k] for k in columns]
         try:
-            # print_warning(query)
-            # print_warning(values)
             cursor:sqlite3.Cursor = self.db_conn.cursor().execute(query, values)
             self.db_conn.commit()
             return cursor.lastrowid
         except Error as e:
             print_fail("SQLite Execute Insert Error:{}".format(e))
+            print_warning(query)
+            print_warning(values)
         return 0
 
     def execute_query_update(self,table:str, row:Row, keys:list=["id"], columns_timestamp:list=["last_updated"]) -> int:
@@ -221,3 +221,18 @@ class Connection():
         """Update the commit information and retrive the updated value from the DB"""
         self.execute_query_update("commits", commit_data, keys=["id"], columns_timestamp=[])
         return self.get_branch(commit_data["repo_id"], commit_data["id"], pk_column="id")
+
+    def get_commit_file(self, commit_id:int, file_name:str, pk_column:str="file_name"):
+        """Get the repository commit file by file name"""
+        commits = self.execute_query_fetch("commit_file", condition_dict={"commit_id":commit_id, pk_column:file_name})
+        return commits[0] if len(commits) > 0 else None
+
+    def add_commit_file(self, commit_id:int, commit_data:dict) -> Row:
+        """Store new commit into the DB"""
+        self.execute_query_insert("commit_file",commit_data, columns_timestamp=[])
+        return self.get_commit_file(commit_id, commit_data["file_name"])
+
+    def update_commit_files(self, commit_file_data:Row) -> Row:
+        """Update the commit information and retrive the updated value from the DB"""
+        self.execute_query_update("commit_file", commit_file_data, keys=["id"], columns_timestamp=[])
+        return self.get_branch(commit_file_data["commit_id"], commit_file_data["id"], pk_column="id")
