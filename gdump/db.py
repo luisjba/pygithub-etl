@@ -3,7 +3,7 @@
 """
 SQLite Database layer  
 @datecreated: 2021-09-16
-@lastupdated: 2021-09-17
+@lastupdated: 2021-09-20
 @author: Jose Luis Bracamonte Amavizca
 """
 # Meta informations.

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GitDump class definition 
+GithubETL class definition 
 @datecreated: 2021-09-16
-@lastupdated: 2021-09-17
+@lastupdated: 2021-09-20
 @author: Jose Luis Bracamonte Amavizca
 """
 # Meta informations.
 __author__ = 'Jose Luis Bracamonte Amavizca'
-__version__ = '0.0.1'
+__version__ = '0.1.2'
 __maintainer__ = 'Jose Luis Bracamonte Amavizca'
 __email__ = 'me@luisjba.com'
 __status__ = 'Development'
@@ -23,7 +23,7 @@ from github.Repository import Repository
 from .db import Connection
 from .utils import print_fail, print_okgreen, print_okblue, print_warning
 
-class GitDump():
+class GithubETL():
     def __init__(self, token: str, repo_fullname: str, db_file: str = "data/data.db", base_path: str = "", schemas_dir="schemas") -> None:
         self._date_format:str = "%Y/%m/%d %H:%M:%S"
         self.g: Github = Github(token)
