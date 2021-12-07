@@ -43,9 +43,9 @@
     {% endfor %}
     </div>
     <h1 class="page-header">Top Contributors</h1>
-    <div class="media">
-        
-    </div>
+    <ul id="top-contributors" class="media-list">
+
+    </ul>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -53,6 +53,7 @@
 <script>
     var hchart_modified = null;
     var chart_list = {{chart_list|safe}};
+    var contributors_endpoint = "{{contributors_endpoint|safe}}";
     var start_date = {{start_date|safe}};
     var end_date = {{end_date|safe}};
     var end_date = {{end_date|safe}};
@@ -146,6 +147,7 @@ function updateCharts(){
         chartItem['chart'] = new Highcharts.Chart(chartItem['id'],options);
         fetch_series_data(chartItem['chart'], chartItem['enpoint'], start_date, end_date);
     });
+    fetch_top_contributors($("#top-contributors"), contributors_endpoint, start_date, end_date);
 }
 
 function fetch_series_data(chart, baseApiUrl, start, end){
@@ -159,7 +161,56 @@ function fetch_series_data(chart, baseApiUrl, start, end){
                 chart.series[i].update(serie);
             }
         });
-    })
+    });
+}
+function fetch_top_contributors(list_jq,baseApiUrl, start, end){
+    fetch(baseApiUrl+'/'+start+'/'+end).then(response => {
+        return response.json()
+    }).then(data => {
+        list_jq.fadeOut().empty();
+        data.contributors.forEach( (contributor, i) => {
+            append_contributor(list_jq, contributor, i);
+        });
+        list_jq.fadeIn();
+    });
+}
+function append_contributor(list_jq, contributor, i){
+    var li = $("<li/>").addClass('media').appendTo(list_jq);
+    li.append(
+        $("<div/>").addClass('media-left')
+        .append(
+            $("<a href='#'/>")
+            .append(
+                $("<img/>").addClass('media-object img-circle').attr({"src": contributor.url, "alt":contributor.name})
+            )
+        )
+        .append(
+            $("<h5>#"+(i+1)+" "+contributor.name+"</h5>").addClass('media-heading text-center')
+        )
+    ).append(
+        $("<div/>").addClass('media-body')
+        .append(
+            $("<ul/>").addClass('list-group')
+            .append(
+                $("<li/>").addClass('list-group-item ')
+                .append(
+                    $("<span>"+contributor.contributions_str+"</span>").addClass('badge font-size-h1')
+                ).append("Contributions")
+            )
+            .append(
+                $("<li/>").addClass('list-group-item')
+                .append(
+                    $("<span>"+contributor.repos_str+"</span>").addClass('badge')
+                ).append("Projects")
+            )
+            .append(
+                $("<li/>").addClass('list-group-item')
+                .append(
+                    $("<span>"+contributor.files_str+"</span>").addClass('badge')
+                ).append("Files")
+            )
+        )
+    );
 }
 </script>
 {% endblock %}

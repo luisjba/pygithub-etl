@@ -94,7 +94,7 @@ def repos_modified_by_author_series(start, end):
     """
     return get_db().execute(query, [start, end]).fetchall()
 
-def repos_top_contributors(start, end):
+def repos_top_contributors(start, end, limit=10):
     query="""
     SELECT commits.commit_author_name AS name
         ,commits.author_login AS login
@@ -107,5 +107,6 @@ def repos_top_contributors(start, end):
     WHERE commits.commit_author_date BETWEEN ? AND ?
     GROUP BY commits.commit_author_name
 	ORDER BY contributions DESC
+    LIMIT ?
     """
-    return get_db().execute(query, [start, end]).fetchall()
+    return get_db().execute(query, [start, end, limit]).fetchall()
