@@ -1,0 +1,25 @@
+{%- extends "bootstrap/base.html" %}
+{% block styles %}
+{{super()}}
+<link rel="stylesheet"
+      href="{{url_for('static', filename='css/main.css')}}?v=2">
+{% endblock %}
+{% block head %}
+{{super()}}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+{% endblock %}
+{% block title %}This is an example page{% endblock %}
+
+{% block navbar %}
+<div class="navbar navbar-fixed-top">
+  <!-- ... -->
+</div>
+{% endblock %}
+
+{% block content %}
+  <h1>Hello, Bootstrap</h1>
+{% endblock %}
+{% block scripts %}
+<script src="{{url_for('static', filename='js/main.js')}}"></script>
+{{super()}}
+{% endblock %}

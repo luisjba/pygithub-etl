@@ -6,6 +6,7 @@ Usage:
   main.py version
   main.py sync TOKEN REPO [--db=<database>] [--sdir=<schemadirectory>]
   main.py analize [--db=<database>]
+  main.py dashboard [--db=<database>]
 
 Arguments:
   TOKEN        The GitHub Token
@@ -21,9 +22,9 @@ by default is 'schemas'.
 """
 from docopt import docopt
 import etl
+import os
 
 def _get_base_path() -> str:
-    import os
     return str(os.path.dirname(os.path.abspath(__file__)) ).replace(os.getcwd()+"/","")
 
 def help():
@@ -48,16 +49,34 @@ def sync(args:dict):
 def analize(args):
     print("TODO: ANALIZE")
 
+def dashboard(args):
+    app_kargs={
+        "port":5000,
+        "debug":True
+    }
+    dashboard_kargs={
+        "db_path": os.path.join(
+                        _get_base_path(), 
+                        args.get('--db') if args.get('--db') else "data/data.db"
+                    )
+    }
+    app = etl.dashboard_app(**dashboard_kargs)
+    app.run(**app_kargs)
 
 if __name__ == '__main__':
     args = docopt(__doc__, version=etl.__version__)
-    print(args)
+    #print(args)
     if args.get('help'):
         help()
     elif args.get('version'):
         version()
     elif  args.get('analize'):
         analize(args)
-    else:
+    elif  args.get('sync'):
         sync(args)
+    elif  args.get('dashboard'):
+        dashboard(args)
+    else:
+        print("Invalid command")
+        help()
     
