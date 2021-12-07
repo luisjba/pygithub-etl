@@ -23,6 +23,7 @@ by default is 'schemas'.
 from docopt import docopt
 import etl
 import os
+from socket import gethostname
 
 def _get_base_path() -> str:
     return str(os.path.dirname(os.path.abspath(__file__)) ).replace(os.getcwd()+"/","")
@@ -63,7 +64,7 @@ def dashboard(args):
     app = etl.dashboard_app(**dashboard_kargs)
     app.run(**app_kargs)
 
-if __name__ == '__main__':
+if __name__ == '__main__' and 'liveconsole' not in gethostname():
     args = docopt(__doc__, version=etl.__version__)
     #print(args)
     if args.get('help'):
