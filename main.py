@@ -52,7 +52,7 @@ def analize(args):
     print("TODO: ANALIZE")
 
 def dashboard(args) -> flask.Flask:
-    app_kargs={
+    run_kargs={
         "port":5000,
         "debug":True
     }
@@ -64,7 +64,7 @@ def dashboard(args) -> flask.Flask:
     }
     app = etl.dashboard_app(**dashboard_kargs)
     if not args.get('--not_run'):
-        app.run(**app_kargs)
+        app.run(**run_kargs)
     else:
         return app
 
@@ -72,6 +72,7 @@ if __name__ == '__main__':
     # Check if a uWSGY mode is executing them
     if 'liveconsole' in gethostname():
         app = dashboard({'--not_run':True})
+        # dashboard({})
     else:
         args = docopt(__doc__, version=etl.__version__)
         #print(args)
