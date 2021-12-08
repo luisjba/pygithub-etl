@@ -1,7 +1,7 @@
 FROM tiangolo/uwsgi-nginx-flask:python3.6-alpine3.7
 RUN apk add --no-cache --update \
     bash nano \
-    python3 python3-dev gcc \
+    python3 python3-dev gcc make\
     gfortran musl-dev g++ \
     libffi-dev openssl-dev \
     libxml2 libxml2-dev \
