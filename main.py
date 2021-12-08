@@ -21,6 +21,7 @@ Options:
 by default is 'schemas'.
 """
 from docopt import docopt
+import flask
 import etl
 import os
 from socket import gethostname
@@ -50,7 +51,7 @@ def sync(args:dict):
 def analize(args):
     print("TODO: ANALIZE")
 
-def dashboard(args):
+def dashboard(args) -> flask.Flask:
     app_kargs={
         "port":5000,
         "debug":True
@@ -62,22 +63,29 @@ def dashboard(args):
                     )
     }
     app = etl.dashboard_app(**dashboard_kargs)
-    app.run(**app_kargs)
-
-if __name__ == '__main__' and 'liveconsole' not in gethostname():
-    args = docopt(__doc__, version=etl.__version__)
-    #print(args)
-    if args.get('help'):
-        help()
-    elif args.get('version'):
-        version()
-    elif  args.get('analize'):
-        analize(args)
-    elif  args.get('sync'):
-        sync(args)
-    elif  args.get('dashboard'):
-        dashboard(args)
+    if not args.get('--not_run'):
+        app.run(**app_kargs)
     else:
-        print("Invalid command")
-        help()
+        return app
+
+if __name__ == '__main__':
+    # Check if a uWSGY mode is executing them
+    if 'liveconsole' in gethostname():
+        app = dashboard({'--not_run':True})
+    else:
+        args = docopt(__doc__, version=etl.__version__)
+        #print(args)
+        if args.get('help'):
+            help()
+        elif args.get('version'):
+            version()
+        elif  args.get('analize'):
+            analize(args)
+        elif  args.get('sync'):
+            sync(args)
+        elif  args.get('dashboard'):
+            dashboard(args)
+        else:
+            print("Invalid command")
+            help()
     
