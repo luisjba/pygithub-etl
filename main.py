@@ -68,25 +68,22 @@ def dashboard(args) -> flask.Flask:
     else:
         return app
 
-if __name__ == '__main__':
-    # Check if a uWSGY mode is executing them
-    if 'liveconsole' in gethostname():
-        app = dashboard({'--not_run':True})
-        # dashboard({})
+if __name__ == '__main__' and 'liveconsole' not in gethostname():
+    args = docopt(__doc__, version=etl.__version__)
+    #print(args)
+    if args.get('help'):
+        help()
+    elif args.get('version'):
+        version()
+    elif  args.get('analize'):
+        analize(args)
+    elif  args.get('sync'):
+        sync(args)
+    elif  args.get('dashboard'):
+        dashboard(args)
     else:
-        args = docopt(__doc__, version=etl.__version__)
-        #print(args)
-        if args.get('help'):
-            help()
-        elif args.get('version'):
-            version()
-        elif  args.get('analize'):
-            analize(args)
-        elif  args.get('sync'):
-            sync(args)
-        elif  args.get('dashboard'):
-            dashboard(args)
-        else:
-            print("Invalid command")
-            help()
-    
+        print("Invalid command")
+        help()
+else:
+    # Check if a uWSGY or PythonAnywere mode is executing them
+    app = dashboard({'--not_run':True})
