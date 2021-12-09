@@ -1,4 +1,4 @@
-FROM tiangolo/uwsgi-nginx-flask:python3.8
+FROM tiangolo/uwsgi-nginx-flask:python3.8-alpine
 RUN apk add --no-cache --update \
     bash nano \
     python3 python3-dev gcc make\
