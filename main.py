@@ -87,3 +87,4 @@ if __name__ == '__main__' and 'liveconsole' not in gethostname():
 else:
     # Check if a uWSGY or PythonAnywere mode is executing them
     app = dashboard({'--not_run':True})
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
