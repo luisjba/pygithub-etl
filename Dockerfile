@@ -7,6 +7,8 @@ RUN apk add --no-cache --update \
     libxml2 libxml2-dev \
     libxslt libxslt-dev \
     libjpeg-turbo-dev zlib-dev
+RUN pip install --upgrade pip
+RUN pip install pandas
 ENV STATIC_URL /static
 COPY ./requirements.txt /var/www/requirements.txt
 RUN pip install --upgrade pip
