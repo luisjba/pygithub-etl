@@ -10,6 +10,7 @@ RUN apk add --no-cache --update \
 RUN pip install --upgrade pip
 RUN pip install pandas
 ENV STATIC_URL /static
+ENV STATIC_PATH /app/etl/dashboard/static
 COPY ./requirements.txt /var/www/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r /var/www/requirements.txt
