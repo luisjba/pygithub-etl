@@ -2,11 +2,12 @@
 {% block styles %}
 {{super()}}
 <link rel="stylesheet"
-      href="{{url_for('static', filename='css/main.css')}}?v=3">
+      href="{{url_for('static', filename='css/main.css')}}?v=4">
 {% endblock %}
 {% block head %}
 {{super()}}
 <script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/drilldown.js"></script>
 {% endblock %}
 {% block title %}This is an example page{% endblock %}
 

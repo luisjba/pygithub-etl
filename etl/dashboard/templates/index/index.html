@@ -35,6 +35,7 @@
     <div class="page-header">
         <h1>Top Most Popular GitHub repositories </h1>
         <h4 id="head_date">Date</h4>
+        link = {{url_for('details.index')}}
     </div>
     <div class="row">
     {% for chart_item in chart_list %}
@@ -54,7 +55,6 @@
     var chart_list = {{chart_list|safe}};
     var contributors_endpoint = "{{contributors_endpoint|safe}}";
     var start_date = {{start_date|safe}};
-    var end_date = {{end_date|safe}};
     var end_date = {{end_date|safe}};
     var date1 = new Date(start_date * 1000).toISOString().slice(0,10);
     var date2 = new Date(end_date * 1000).toISOString().slice(0,10);

@@ -43,11 +43,14 @@ def commits_max_date() -> int:
 
 def repos_modified_series(start:int, end:int) -> list:
     query="""
-    SELECT repo.name AS Name
+    SELECT
+        repo.id AS Id 
+        ,repo.name AS Name
         ,IFNULL(SUM(cm.stats_total), 0)  AS Total
     FROM repo 
     LEFT JOIN (
-        SELECT repo_id
+        SELECT
+            repo_id
             ,stats_total
             ,commit_author_date
         FROM commits
@@ -61,11 +64,13 @@ def repos_modified_series(start:int, end:int) -> list:
 
 def repos_modified_files_series(start, end):
     query="""
-    SELECT repo.name AS Name
+    SELECT 
+        repo.id AS Id
+        ,repo.name AS Name
         ,IFNULL(COUNT(cm.file_id), 0)  AS Total
     FROM repo 
     LEFT JOIN (
-        SELECT commits.repo_id
+        SELECT commits.repo_id AS repo_id
             ,commit_file.id AS file_id
         FROM commits
         INNER JOIN commit_file ON (commit_file.commit_id = commits.id)
@@ -79,7 +84,9 @@ def repos_modified_files_series(start, end):
 
 def repos_modified_by_author_series(start, end):
     query="""
-    SELECT repo.name AS Name
+    SELECT
+        repo.id as Id
+        ,repo.name AS Name
         ,IFNULL(COUNT(cm.author), 0)  AS Total
     FROM repo 
     LEFT JOIN (
@@ -110,3 +117,23 @@ def repos_top_contributors(start, end, limit=10):
     LIMIT ?
     """
     return get_db().execute(query, [start, end, limit]).fetchall()
+
+
+def repos_top_contributors_by_repo(repo_id,start, end, limit=10, order_by='contributions'):
+    query="""
+    SELECT commits.commit_author_name AS name
+        ,commits.author_login AS login
+		,commits.author_avatar_url as url
+        ,IFNULL(SUM(commits.stats_total), 0)  AS contributions
+        ,IFNULL(COUNT(DISTINCT commits.repo_id), 0)  AS repos
+        ,IFNULL(COUNT(commit_file.id), 0)  AS files
+    FROM repo
+    INNER JOIN commits ON (commits.repo_id = repo.id)
+    INNER JOIN commit_file ON (commit_file.commit_id = commits.id)
+    WHERE repo.id = ?
+    AND commits.commit_author_date BETWEEN ? AND ?
+    GROUP BY commits.commit_author_name
+	ORDER BY ? DESC
+    LIMIT ?
+    """
+    return get_db().execute(query, [repo_id,start, end, order_by, limit]).fetchall()

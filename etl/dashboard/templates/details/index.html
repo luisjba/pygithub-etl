@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Details{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">Dashboard</a>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <form class="navbar-form nav navbar-nav">
+            <div class="form-group btn-group" id="days-control">
+                <button type="button" class="btn btn-default" data-days="365">1 year</button>
+                <button type="button" class="btn btn-default" data-days="182">6 months</button>
+                <button type="button" class="btn btn-default" data-days="90">3 months</button>
+                <button type="button" class="btn btn-default" data-days="30">30 days</button>
+                <button type="button" class="btn btn-default active" data-days="7">Las 7 days</button>
+            </div>
+        </form>
+        <h3 class="navbar-text" id="date-info"></h3>
+      </div><!--/.navbar-collapse -->
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="clearfix">...</div>
+<div class="container">
+    <div class="page-header">
+        <h1>Top Most Popular GitHub repositories </h1>
+        <h4 id="head_date">Date</h4>
+    </div>
+    <div class="row">
+        
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            {% for chart_item in chart_list %}
+            <div id="{{chart_item['id']}}" class="chart"></div>
+            {% endfor %}
+        </div>
+        <div id="top-contributors" class="col-md-4">
+            <h1 class="contributors-title">Top Contributors</h1>
+            <div class="contributors-list"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script>
+var hchart_modified = null;
+var chart_list = {{chart_list|safe}};
+var contributors_endpoint = "{{contributors_endpoint|safe}}";
+var contributorsbyrepo_endpoint = "{{contributorsbyrepo_endpoint|safe}}";
+var start_date = {{start_date|safe}};
+var end_date = {{end_date|safe}};
+var date1 = new Date(start_date * 1000).toISOString().slice(0,10);
+var date2 = new Date(end_date * 1000).toISOString().slice(0,10);
+var chat_options_default = {
+            chart: {type:'bar'},
+            title: '',
+            // accessibility: {
+            //     announceNewData: {
+            //         enabled: true
+            //     }
+            // },
+            xAxis: {
+                type: 'category'
+            },
+            yAxis: {title:{text:'Modifications'}},
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'top',
+                enabled: true
+            },
+            credits: {
+                enabled: false
+            },
+            plotOptions: {
+                series: {
+                    borderWidth: 0,
+                    dataLabels: {
+                        enabled: true,
+                        format: '{point.y:,.0f}'
+                    }
+                }
+            },
+            tooltip: {
+                headerFormat: '<span style="font-size:11px">{series.name}</span><br>',
+                pointFormat: '<span style="color:{point.color}">{point.name}</span>: <b>{point.y:,.0f}</b> of total<br/>'
+            },
+            series: [],
+            drilldown: {
+                series: []
+            },
+            responsive: {
+                rules: [{
+                    condition: {
+                        maxWidth: 300
+                    },
+                    chartOptions: {
+                        legend: {
+                            align: 'center',
+                            verticalAlign: 'bottom',
+                            layout: 'horizontal'
+                        },
+                        // yAxis: {
+                        //     labels: {
+                        //         align: 'left',
+                        //         x: 0,
+                        //         y: 0
+                        //     },
+                        //     title: {
+                        //         text: null
+                        //     }
+                        // },
+                        // subtitle: {
+                        //     text: null
+                        // },
+                        credits: {
+                            enabled: false
+                        }
+                    }
+                }]
+            }
+        };
+        
+$(document).ready(function() {
+    updateCharts();
+    $("#days-control button").each( (i,btn) => {
+        //var days = btn.data('days');
+        //console.log(days);
+        var jqBtn = $(btn);
+        var days = jqBtn.data('days');
+        btn.addEventListener('click', ()=>{
+            $("#days-control button").removeClass('active');
+            jqBtn.addClass('active');
+            start_date = end_date - (days * 60_000);
+            date1 = new Date(start_date * 1000).toISOString().slice(0,10);
+            updateCharts();
+        });
+
+    });
+});
+
+function updateCharts(skipChart){
+    $("#date-info, #head_date").text("From: "+date1 + " to " + date2);
+    var defaultChar = undefined;
+    chart_list.forEach(chartItem => {
+        if (skipChart == undefined || chartItem.id != skipChart){
+            var options = $.extend({}, chat_options_default, chartItem['chart_options']);
+            if (chartItem['chart'] ==  undefined)
+                if (options.chart["events"] == undefined)
+                    options.chart["events"] = {};
+                options.chart.events["drilldown"] = (e) => {
+                    //console.log(e.target);
+                    fetch_series_data_drillwon(chartItem, e, start_date, end_date);
+                };
+                options.chart.events["drillupall"] = (e) => {
+                    fetch_top_contributors_from_parentChart(chartItem.chart);
+                };
+                chartItem['chart'] = new Highcharts.Chart(chartItem['id'],options);
+                if (defaultChar == undefined)
+                    defaultChar = chartItem['chart'] 
+            fetch_series_data(chartItem['chart'], chartItem['endpoint'], start_date, end_date);
+        }
+    });
+    if (skipChart == undefined && defaultChar != undefined)
+        fetch_top_contributors_from_parentChart(defaultChar);
+}
+
+function fetch_top_contributors_from_parentChart(parentChart){
+
+    fetch_top_contributors(start_date, end_date,parentChart.order_by);
+}
+
+
+function fetch_series_data(chart, baseApiUrl, start, end){
+    fetch(baseApiUrl+'/'+start+'/'+end).then(response => {
+        return response.json()
+    }).then(data => {
+        data.series.forEach( (serie, i) => {
+            //console.log(baseApiUrl, serie.data)
+            if(chart.series.length <= i){
+                chart.addSeries(serie);
+            }else{
+                chart.series[i].update(serie);
+            }
+            if ('/api/modified' == baseApiUrl){
+                serie.data.forEach( (d_repo,j) =>{
+                    //fetch_series_data_drillwon(chart, d_repo.drilldown, start, end)
+                });
+            }
+        });
+    });
+}
+
+function fetch_series_data_drillwon(chartParent, drilldownEvent, start, end){
+    var chart = chartParent.chart;
+    var repoName = drilldownEvent.point.name;
+    if(!drilldownEvent.seriesOptions){
+        var repo_id = drilldownEvent.point.drilldown;repoName
+        chart.showLoading('Loading '+repoName+' data ...');
+        fetch(chartParent.drilldownEndpoint+'/'+repo_id+'/'+start+'/'+end).then(response => {
+            return response.json()
+        }).then(data => {
+            chart.hideLoading();
+            chart.addSeriesAsDrilldown(
+                drilldownEvent.point, 
+                {
+                    name: drilldownEvent.point.name,
+                    data: data.contributors.map( contributor => [contributor.name, contributor.contributions])
+                }
+            );
+            display_contributors(data.contributors, "in "+repoName);
+            updateCharts(chartParent.id);
+        });
+    }
+}
+
+function fetch_top_contributors(start, end, order_by){
+    fetch(contributors_endpoint+'/'+start+'/'+end).then(response => {
+        return response.json()
+    }).then(data => {
+        display_contributors(data.contributors);
+    });
+}
+
+function display_contributors(contributors, title){
+    $("#top-contributors .contributors-title").hide().empty()
+    .append("Top Contributors " + (title || ""))
+    .fadeIn();
+    container = $("#top-contributors .contributors-list");
+    container.hide().empty();
+    contributors.forEach( (contributor, i) => {
+        append_contributor(container, contributor, i);
+    });
+    container.fadeIn();
+}
+
+function append_contributor(container, contributor, i){
+    $("<div/>").addClass("row").appendTo(container)
+    .append(
+        $("<div/>").addClass("col-md-4")
+        .append(
+            contributorNumberAndImage(contributor, i+1)
+        )
+        .append(
+            $("<p>"+contributor.name+"</p>").addClass('text-right')
+        )
+    )
+    .append(
+        $("<div/>").addClass("col-md-8")
+        .append(
+            contributorAstableItem(contributor)
+        )
+    );
+}
+
+function contributorNumberAndImage(contributor, position){
+    return $("<div/>").addClass("row")
+    .append(
+        $("<div/>").addClass("col-md-4")
+        .append(
+            $("<strong>#"+position+"</strong>").addClass("vertical-top")
+            .attr({"style":"font-size:25px"})
+        )
+    )
+    .append(
+        $("<div/>").addClass("col-md-8")
+        .append(
+            $("<img/>").addClass('img-circle')
+            .attr({"src": contributor.url, "alt":contributor.name, "style":"max-width:50px"})
+        )
+    );
+}
+
+function contributorAstableItem(contributor){
+    return $("<table/>").addClass("table table-condensed")
+    .append(
+        $("<tr/>")
+        .append(thEl("Contributions"))
+        .append(tdWithBadgeEl(contributor.contributions_str))
+    )
+    .append(
+        $("<tr/>")
+        .append(thEl("Projects"))
+        .append(tdWithBadgeEl(contributor.repos_str))
+    )
+    .append(
+        $("<tr/>")
+        .append(thEl("Files"))
+        .append(tdWithBadgeEl(contributor.files_str))
+    );
+}
+
+function thEl(value){
+    return $('<th/>').append(value);
+}
+
+function tdEl(value){
+    return $('<td/>').append(value);
+}
+
+function tdWithBadgeEl(value){
+    return tdEl($("<span>"+value+"</span>").addClass('badge'));
+}
+</script>
+{% endblock %}

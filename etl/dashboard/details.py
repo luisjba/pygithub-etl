@@ -10,16 +10,16 @@ from .db import (
     repos_top_contributors
 )
 
-bp = Blueprint('index', __name__)
-
+bp = Blueprint('details', __name__, url_prefix='/details')
 @bp.route('/')
 def index():
     max_date = commits_max_date()
     chart_list = [
         {
             'id':'topModified',
-            'enpoint': url_for('api.modified'),
+            'endpoint': url_for('api.modified'),
             'order_by':'contributions',
+            'drilldownEndpoint': url_for('api.contributors_by_repo'),
             'chart_options':{
                 'chart':{'type':'bar'},
                 'title': {'text':'Changes'},
@@ -27,13 +27,17 @@ def index():
                     'title':{
                         'text':'Total changes'
                     }
+                },
+                'xAxis':{
+                    'type': 'category'
                 }
             }
         },
         {
             'id':'topModifiedFiles',
-            'enpoint': url_for('api.files'),
+            'endpoint': url_for('api.files'),
             'order_by':'files',
+            'drilldownEndpoint': url_for('api.contributors_by_repo'),
             'chart_options':{
                 'chart':{'type':'bar'},
                 'title': {'text':'Files Modified'},
@@ -46,8 +50,9 @@ def index():
         },
         {
             'id':'topModifiedByAuthor',
-            'enpoint': url_for('api.author'),
+            'endpoint': url_for('api.author'),
             'order_by':'contributions',
+            'drilldownEndpoint': url_for('api.contributors_by_repo'),
             'chart_options':{
                 'chart':{'type':'bar'},
                 'title': {'text':'Contributors'},
@@ -60,9 +65,10 @@ def index():
         }
     ]
     return render_template(
-        'index/index.html',
+        'details/index.html',
         chart_list=chart_list,
         start_date=max_date - (7 * 60_000),
         end_date=max_date,
         contributors_endpoint= url_for('api.contributors')
     )
+

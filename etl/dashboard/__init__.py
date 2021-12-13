@@ -14,9 +14,9 @@ __email__ = 'me@luisjba.com'
 __status__ = 'Development'
 
 import os
-from flask import Flask
+from flask import Flask, blueprints
 from flask_bootstrap import Bootstrap
-from . import db, index
+from . import db, index, details, api
 
 def create_app(test_config=None, db_path = None) -> Flask:
     # create and configure the app
@@ -49,9 +49,8 @@ def create_app(test_config=None, db_path = None) -> Flask:
     db.init_app(app)
 
     # Blueprint registration
-    app.register_blueprint(index.bp)
-    # app.add_url_rule('/', endpoint='index')
-
-    
+    blueprints_list = [index, details, api]
+    for bp_item in blueprints_list:
+        app.register_blueprint(bp_item.bp)
     return app
 
